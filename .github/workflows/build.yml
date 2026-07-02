@@ -2,7 +2,15 @@ name: Build
 
 on:
   push:
+    branches:
+      - main
+    tags:
+      - "v*"
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   app:
@@ -12,14 +20,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Read version
+        id: version
+        run: |
+          version="$(tr -d '[:space:]' < VERSION)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Check release tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          expected="v${{ steps.version.outputs.version }}"
+          if [ "${GITHUB_REF_NAME}" != "$expected" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match VERSION ($expected)." >&2
+            exit 1
+          fi
+
       - name: Build app
         run: ./build.sh
 
       - name: Package app
-        run: ditto -c -k --keepParent "Codex Switch.app" "Codex Switch.zip"
+        run: |
+          ditto -c -k --keepParent "Codex Switch.app" "Codex Switch-${{ steps.version.outputs.version }}.zip"
 
       - name: Upload app
         uses: actions/upload-artifact@v4
         with:
           name: Codex Switch
-          path: Codex Switch.zip
+          path: Codex Switch-${{ steps.version.outputs.version }}.zip
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          gh release create "$GITHUB_REF_NAME" \
+            "Codex Switch-${version}.zip" \
+            --title "Codex Switch ${version}" \
+            --notes "Codex Switch ${version}"

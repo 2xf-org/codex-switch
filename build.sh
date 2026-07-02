@@ -7,6 +7,8 @@ cd "$(dirname "$0")"
 APP="Codex Switch.app"
 EXEC_NAME="CodexSwitch"
 MIN_MACOS="13.0"
+VERSION="$(tr -d '[:space:]' < VERSION)"
+BUILD_NUMBER="${BUILD_NUMBER:-${VERSION//./}}"
 
 echo "› Generating icons…"
 swift tools/icons.swift Resources build/AppIcon.iconset .github >/dev/null
@@ -16,6 +18,8 @@ echo "› Assembling bundle…"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Info.plist "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp Resources/menubar.png Resources/menubar@2x.png "$APP/Contents/Resources/"
 
@@ -31,4 +35,4 @@ swiftc -O \
 # Ad-hoc code signature so macOS will launch it locally without Gatekeeper complaints.
 codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
 
-echo "✓ Built $(pwd)/$APP"
+echo "✓ Built $(pwd)/$APP ($VERSION)"

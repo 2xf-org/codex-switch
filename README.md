@@ -24,6 +24,8 @@ in a click. It has no Dock icon, no third-party service, and no telemetry.
 
 Requires macOS 13+ and Xcode command line tools.
 
+Download the latest app from [Releases](https://github.com/2xf-org/codex-switch/releases), or build it locally:
+
 ```sh
 ./build.sh
 open "Codex Switch.app"
